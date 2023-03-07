@@ -1,0 +1,113 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<domain type='kvm'>
+  <name>Windows 98</name>
+  <uuid>e85acc85-1fb1-6054-f5b1-2e6857f9f3bd</uuid>
+  <metadata>
+    <vmtemplate xmlns="unraid" name="Windows XP" icon="Windows_98.png" os="windowsxp"/>
+  </metadata>
+  <memory unit='KiB'>524288</memory>
+  <currentMemory unit='KiB'>524288</currentMemory>
+  <memoryBacking>
+    <nosharepages/>
+  </memoryBacking>
+  <vcpu placement='static'>1</vcpu>
+  <cputune>
+    <vcpupin vcpu='0' cpuset='0'/>
+  </cputune>
+  <os>
+    <type arch='x86_64' machine='pc-i440fx-7.1'>hvm</type>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+  </features>
+  <cpu mode='host-passthrough' check='none' migratable='on'>
+    <topology sockets='1' dies='1' cores='1' threads='1'/>
+    <cache mode='passthrough'/>
+    <feature policy='require' name='topoext'/>
+  </cpu>
+  <clock offset='utc'>
+    <timer name='pit' tickpolicy='delay'/>
+    <timer name='rtc' tickpolicy='catchup'/>
+  </clock>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>restart</on_crash>
+  <devices>
+    <emulator>/usr/local/sbin/qemu</emulator>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2' cache='writeback'/>
+      <source file='/mnt/user/domains/Windows 98/vdisk1.img'/>
+      <target dev='hdc' bus='ide'/>
+      <serial>boot</serial>
+      <boot order='1'/>
+      <address type='drive' controller='0' bus='1' target='0' unit='0'/>
+    </disk>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2' cache='writeback'/>
+      <source file='/mnt/user/domains/Windows 98/vdisk2.img'/>
+      <target dev='hdd' bus='ide'/>
+      <serial>vdisk2</serial>
+      <address type='drive' controller='0' bus='1' target='0' unit='1'/>
+    </disk>
+    <controller type='usb' index='0' model='ich9-ehci1'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x7'/>
+    </controller>
+    <controller type='usb' index='0' model='ich9-uhci1'>
+      <master startport='0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0' multifunction='on'/>
+    </controller>
+    <controller type='usb' index='0' model='ich9-uhci2'>
+      <master startport='2'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x1'/>
+    </controller>
+    <controller type='usb' index='0' model='ich9-uhci3'>
+      <master startport='4'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x2'/>
+    </controller>
+    <controller type='pci' index='0' model='pci-root'/>
+    <controller type='ide' index='0'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x01' function='0x1'/>
+    </controller>
+    <controller type='virtio-serial' index='0'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
+    </controller>
+    <interface type='bridge'>
+      <mac address='52:54:00:b6:1c:63'/>
+      <source bridge='br0'/>
+      <model type='rtl8139'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x03' function='0x0'/>
+    </interface>
+    <serial type='pty'>
+      <target type='isa-serial' port='0'>
+        <model name='isa-serial'/>
+      </target>
+    </serial>
+    <console type='pty'>
+      <target type='serial' port='0'/>
+    </console>
+    <channel type='unix'>
+      <target type='virtio' name='org.qemu.guest_agent.0'/>
+      <address type='virtio-serial' controller='0' bus='0' port='1'/>
+    </channel>
+    <input type='mouse' bus='ps2'/>
+    <input type='keyboard' bus='ps2'/>
+    <graphics type='vnc' port='-1' autoport='yes' websocket='-1' listen='0.0.0.0' keymap='en-us'>
+      <listen type='address' address='0.0.0.0'/>
+    </graphics>
+    <sound model='sb16'/>
+    <audio id='1' type='none'/>
+    <video>
+      <model type='qxl' ram='65536' vram='65536' vgamem='16384' heads='1' primary='yes'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
+    </video>
+    <memballoon model='virtio'>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
+    </memballoon>
+  </devices>
+  <qemu:commandline>
+  <qemu:arg value='-no-acpi'/>
+  <qemu:arg value='-cpu'/>
+  <qemu:arg value='pentium3,vendor=GenuineIntel,+invtsc,+sse,+sse2'/>
+</qemu:commandline>
+</domain>
