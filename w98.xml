@@ -106,7 +106,6 @@
     </memballoon>
   </devices>
   <qemu:commandline>
-  <qemu:arg value='-no-acpi'/>
   <qemu:arg value='-cpu'/>
   <qemu:arg value='pentium3,vendor=GenuineIntel,+invtsc,+sse,+sse2'/>
 </qemu:commandline>
