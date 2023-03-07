@@ -26,13 +26,15 @@ function get_host_path {
 function push_win98 {
     # Create vdisk location if it doesn't exist
     if [ ! -d "$install_location" ]; then
-        echo "Install location directory does not exist. Creating it..."
+        echo "Install location directory does not exist: $install_location. Creating it..."
         mkdir -p "$install_location"
     fi
 
     if [[ "$RUNTYPE" == "Fix-xml" ]]; then
-        if [[ -f "$install_location/vdisk1.img" ]] && [[ -f "$install_location/vdisk2.img" ]]; then
-            check_xml
+        if [[ ! -f "$install_location/vdisk1.img" ]]; then
+            echo "vdisk1.img not found in $install_location. Copying vdisks from /app..."
+            cp /app/kernelex.img "$install_location/vdisk1.img" || { echo "Failed to copy vdisk1.img. Exiting..."; exit 1; }
+            cp /app/data.img "$install_location/vdisk2.img" || { echo "Failed to copy vdisk2.img. Exiting..."; exit 1; }
             return
         fi
     else
@@ -47,7 +49,7 @@ function push_win98 {
             mv "$install_location/vdisk2.img" "$install_location/$old_filename" || { echo "Failed to rename file. Exiting..."; exit 1; }
         fi
 
-        # Move and rename vdisks
+        # Copy and rename vdisks
         if [[ "$TYPE" == "WIN98-KernelEX" ]]; then
             src_file="/app/kernelex.img"
             dst_file="$install_location/vdisk1.img"
@@ -59,21 +61,25 @@ function push_win98 {
             exit 1
         fi
 
-        mv "$src_file" "$dst_file" || { echo "Failed to move file. Exiting..."; exit 1; }
+        echo "Copying $src_file to $dst_file..."
+        cp "$src_file" "$dst_file" || { echo "Failed to copy file. Exiting..."; exit 1; }
 
-        # Move and rename second vdisk
+        # Copy and rename second vdisk
         src_file="/app/data.img"
         dst_file="$install_location/vdisk2.img"
-        mv "$src_file" "$dst_file" || { echo "Failed to move file. Exiting..."; exit 1; }
+
+        echo "Copying $src_file to $dst_file..."
+        cp "$src_file" "$dst_file" || { echo "Failed to copy file. Exiting..."; exit 1; }
     fi
 }
+
 
 function set_variables {
    
     domains_share=$(get_host_path "/vm_location")
     install_location="/vm_location/""$vm_name"
     vdisk_location="$domains_share/$vm_name"
-    icon_location="/unraid_vm_icons/Recalbox-logo.png"  
+    icon_location="/unraid_vm_icons/Windows_98.png"  
     XML_FILE="/tmp/win98.xml"
 }
 
@@ -87,14 +93,18 @@ define_win98() {
     sed -i "s#<mac address='.*'/>#<mac address='$MAC'/>#" "$XML_FILE"
 
     # Replace the source file locations in the XML file with the vdisk location and filename
-    sed -i "s#<source file='\(.*\)/vdisk1.img'/>#<source file='$install_location/vdisk1.img'/>#" "$XML_FILE"
-    sed -i "s#<source file='\(.*\)/vdisk2.img'/>#<source file='$install_location/vdisk2.img'/>#" "$XML_FILE"
+    sed -i "s#<source file='\(.*\)/vdisk1.img'/>#<source file='$vdisk_location/vdisk1.img'/>#" "$XML_FILE"
+    sed -i "s#<source file='\(.*\)/vdisk2.img'/>#<source file='$vdisk_location/vdisk2.img'/>#" "$XML_FILE"
 
     # Replace the name of the virtual machine in the XML file with the specified name
     sed -i "s#<name>.*<\/name>#<name>$vm_name<\/name>#" "$XML_FILE"
 
-    # Define the virtual machine using the modified XML file
+   # Define the virtual machine using the modified XML file
     virsh define "$XML_FILE"
+    rm "$XML_FILE"
+    if [[ "$START_VM" == "Yes" ]]; then
+        virsh start "$vm_name"
+    fi
 }
 
 function check_xml {
@@ -111,23 +121,24 @@ function check_xml {
     fi
 
     # Redefine domain if it exists and is not running
-    if virsh list --name --state-running | grep -q "$vm_name"; then
-        echo "Cannot redefine a running domain. Exiting..."
-        return 1
-    elif virsh list --name --all | grep -q "$vm_name"; then
+    if virsh list --name --all | grep -q "$vm_name"; then
         virsh define "$xml_file"
-        virsh start "$vm_name"
+        echo "XML is now fixed. Exiting..."
+        exit 0
+    else
+        echo "Domain does not exist. Exiting..."
+        exit 1
     fi
-
 }
 
+
 function download_xml {
-	local url="https://raw.githubusercontent.com/SpaceinvaderOne/Recalbox_inabox/main/recal.xml"
+	local url="https://raw.githubusercontent.com/SpaceinvaderOne/Win98_inabox/main/w98.xml"
 	curl -s -L $url -o $XML_FILE
 }
 
 function download_icon {
-    local url="https://github.com/SpaceinvaderOne/Recalbox_inabox/raw/main/Recalbox.png"
+    local url="https://github.com/SpaceinvaderOne/unraid_vm_icons/raw/master/icons/Windows/Windows_98.png"
 
     # Check if the exists (as will only if on Unraid)
     if [ -d "$(dirname "$icon_location")" ]; then
@@ -144,8 +155,8 @@ function download_icon {
 
 set_variables 
 push_win98
-#download_xml
-#download_icon
+download_xml
+download_icon
 define_win98
 
        
