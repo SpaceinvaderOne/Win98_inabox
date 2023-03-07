@@ -109,27 +109,34 @@ define_win98() {
 
 function check_xml {
     local xml_file="/tmp/${vm_name}.xml"
+    echo "Dumping XML file for domain $vm_name..."
     virsh dumpxml "$vm_name" > "$xml_file"
     
     # Remove tablet device
+    echo "Removing tablet device from XML file..."
     sed -i '/<input type='"'"'tablet'"'"'/,/<\/input>/d' "$xml_file"
     
     # Check if qemu:commandline already exists
     if ! grep -q '<qemu:commandline>' "$xml_file"; then
         # Add qemu:commandline if it doesn't exist
+        echo "Adding qemu:commandline to XML file..."
         sed -i '/<\/devices>/i \  <qemu:commandline>\n    <qemu:arg value='"'"'-cpu'"'"'/>\n    <qemu:arg value='"'"'pentium3,vendor=GenuineIntel,+invtsc,+sse,+sse2'"'"'/>\n  </qemu:commandline>' "$xml_file"
     fi
 
     # Redefine domain if it exists and is not running
     if virsh list --name --all | grep -q "$vm_name"; then
+        echo "Defining domain $vm_name using modified XML file..."
         virsh define "$xml_file"
         echo "XML is now fixed. Exiting..."
+        rm "$xml_file"
         exit 0
     else
-        echo "Domain does not exist. Exiting..."
+        echo "Domain $vm_name does not exist. Exiting..."
+        rm "$xml_file"
         exit 1
     fi
 }
+
 
 
 function download_xml {
