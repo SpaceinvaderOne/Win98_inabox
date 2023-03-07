@@ -31,12 +31,16 @@ function push_win98 {
     fi
 
     if [[ "$RUNTYPE" == "Fix-xml" ]]; then
+        # Copy vdisks from /app if they don't exist
         if [[ ! -f "$install_location/vdisk1.img" ]]; then
             echo "vdisk1.img not found in $install_location. Copying vdisks from /app..."
             cp /app/kernelex.img "$install_location/vdisk1.img" || { echo "Failed to copy vdisk1.img. Exiting..."; exit 1; }
             cp /app/data.img "$install_location/vdisk2.img" || { echo "Failed to copy vdisk2.img. Exiting..."; exit 1; }
-            return
+            exit
         fi
+
+        # Call check_xml function to fix XML file
+        check_xml
     else
         # Rename existing files if they exist
         if [[ -f "$install_location/vdisk1.img" ]]; then
@@ -70,8 +74,11 @@ function push_win98 {
 
         echo "Copying $src_file to $dst_file..."
         cp "$src_file" "$dst_file" || { echo "Failed to copy file. Exiting..."; exit 1; }
+
+     
     fi
 }
+
 
 
 function set_variables {
@@ -112,6 +119,14 @@ function check_xml {
     echo "Dumping XML file for domain $vm_name..."
     virsh dumpxml "$vm_name" > "$xml_file"
     
+    # Add XML declaration
+    echo "Adding XML declaration to top of XML file..."
+    sed -i '1i <?xml version='"'"'1.0'"'"' encoding='"'"'UTF-8'"'"'?>' "$xml_file"
+    
+    # Add xmlns:qemu attribute to domain element
+    echo "Adding xmlns:qemu attribute to domain element..."
+    sed -i 's/<domain type='"'"'kvm'"'"'>/<domain type='"'"'kvm'"'"' xmlns:qemu='"'"'http:\/\/libvirt.org\/schemas\/domain\/qemu\/1.0'"'"'>/' "$xml_file"
+    
     # Remove tablet device
     echo "Removing tablet device from XML file..."
     sed -i '/<input type='"'"'tablet'"'"'/,/<\/input>/d' "$xml_file"
@@ -120,7 +135,7 @@ function check_xml {
     if ! grep -q '<qemu:commandline>' "$xml_file"; then
         # Add qemu:commandline if it doesn't exist
         echo "Adding qemu:commandline to XML file..."
-        sed -i '/<\/devices>/i \  <qemu:commandline>\n    <qemu:arg value='"'"'-cpu'"'"'/>\n    <qemu:arg value='"'"'pentium3,vendor=GenuineIntel,+invtsc,+sse,+sse2'"'"'/>\n  </qemu:commandline>' "$xml_file"
+        sed -i '/<\/devices>/a \  <qemu:commandline>\n    <qemu:arg value='"'"'-cpu'"'"'/>\n    <qemu:arg value='"'"'pentium3,vendor=GenuineIntel,+invtsc,+sse,+sse2'"'"'/>\n  </qemu:commandline>' "$xml_file"
     fi
 
     # Redefine domain if it exists and is not running
@@ -128,14 +143,18 @@ function check_xml {
         echo "Defining domain $vm_name using modified XML file..."
         virsh define "$xml_file"
         echo "XML is now fixed. Exiting..."
-        rm "$xml_file"
+        #rm "$xml_file"
         exit 0
     else
         echo "Domain $vm_name does not exist. Exiting..."
-        rm "$xml_file"
+        #rm "$xml_file"
         exit 1
     fi
+    
+    # Exit the script
+    exit
 }
+
 
 
 
