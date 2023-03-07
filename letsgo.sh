@@ -30,17 +30,10 @@ function push_win98 {
         mkdir -p "$install_location"
     fi
 
-    if [[ "$RUNTYPE" == "Fix-xml" ]]; then
-        # Copy vdisks from /app if they don't exist
-        if [[ ! -f "$install_location/vdisk1.img" ]]; then
-            echo "vdisk1.img not found in $install_location. Copying vdisks from /app..."
-            cp /app/kernelex.img "$install_location/vdisk1.img" || { echo "Failed to copy vdisk1.img. Exiting..."; exit 1; }
-            cp /app/data.img "$install_location/vdisk2.img" || { echo "Failed to copy vdisk2.img. Exiting..."; exit 1; }
-            exit
-        fi
-
+    if [[ "$RUNTYPE" == "Fix-xml" && -f "$install_location/vdisk1.img" ]]; then
         # Call check_xml function to fix XML file
         check_xml
+        exit
     else
         # Rename existing files if they exist
         if [[ -f "$install_location/vdisk1.img" ]]; then
@@ -74,10 +67,9 @@ function push_win98 {
 
         echo "Copying $src_file to $dst_file..."
         cp "$src_file" "$dst_file" || { echo "Failed to copy file. Exiting..."; exit 1; }
-
-     
     fi
 }
+
 
 
 
@@ -143,11 +135,10 @@ function check_xml {
         echo "Defining domain $vm_name using modified XML file..."
         virsh define "$xml_file"
         echo "XML is now fixed. Exiting..."
-        #rm "$xml_file"
+        rm "$xml_file"
         exit 0
     else
         echo "Domain $vm_name does not exist. Exiting..."
-        #rm "$xml_file"
         exit 1
     fi
     
