@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<domain type='kvm'>
+<<domain type='kvm' xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
   <name>Windows 98</name>
   <uuid>e85acc85-1fb1-6054-f5b1-2e6857f9f3bd</uuid>
   <metadata>
